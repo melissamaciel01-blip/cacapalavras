@@ -1,0 +1,679 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f1716">
+  <title>Caça-Palavras — protótipo Acesso</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+      font-synthesis: none;
+      --bg: #0f1716;
+      --bg-soft: #12211f;
+      --panel: #152b29;
+      --panel-2: #1b3331;
+      --line: rgba(164, 190, 178, 0.2);
+      --text: #f1f6f4;
+      --muted: #a8b9b3;
+      --accent: #6aaa64;
+      --accent-strong: #5c9b58;
+      --accent-ink: #0a1e1d;
+      --tile: #1d2f2d;
+      --tile-border: #37514c;
+      --tile-ink: #edf6ef;
+      --selected: #c9b458;
+      --selected-ink: #1a1c13;
+      --found: #5da85f;
+      --found-ink: #edf7ef;
+      --hint: #f4d36c;
+      --hint-ink: #1d1a10;
+      --focus: #9ad8ff;
+      --shadow: 0 18px 40px rgba(4, 11, 10, 0.35);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--bg); }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top, rgba(106, 170, 100, 0.2), transparent 25%),
+        linear-gradient(180deg, #0d1717 0%, #0f1716 100%);
+      font-family: "Trebuchet MS", "Avenir Next", sans-serif;
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, [tabindex="0"]:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .prototype-shell {
+      max-width: 1260px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+    .prototype-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .prototype-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      font-weight: 800;
+    }
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: var(--accent-ink);
+      font-family: Georgia, serif;
+      font-size: 18px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+    }
+    .prototype-brand small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+    .prototype-label {
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(17, 31, 30, 0.68);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .prototype-note { margin: 0 0 18px; color: var(--muted); font-size: 12px; }
+
+    .game {
+      color: var(--text);
+      background: rgba(18, 32, 30, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      overflow: hidden;
+      min-height: 700px;
+      box-shadow: var(--shadow);
+    }
+    .game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 26px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(7, 14, 13, 0.52);
+      backdrop-filter: blur(10px);
+    }
+    .game-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: lowercase;
+    }
+    .game-nav { display: flex; align-items: center; gap: 8px; }
+    .nav-btn, .icon-btn {
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text);
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .nav-btn:hover, .icon-btn:hover { background: rgba(255,255,255,0.05); }
+    .nav-btn[aria-pressed="true"] {
+      background: rgba(106, 170, 100, 0.2);
+      color: #dff5e0;
+      box-shadow: inset 0 0 0 1px rgba(106, 170, 100, 0.45);
+    }
+    .icon-btn { border: 1px solid var(--line); }
+
+    .content { max-width: 1020px; padding: 28px 34px 42px; margin: auto; }
+    .game-intro {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 26px;
+    }
+    .eyebrow {
+      color: #a8d2a5;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    h1 {
+      margin: 8px 0 0;
+      font-size: clamp(30px, 3vw, 42px);
+      line-height: 1.08;
+      letter-spacing: -0.05em;
+    }
+    .subline { margin: 10px 0 0; color: var(--muted); font-size: 13px; }
+    .streak {
+      min-width: 122px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .streak-icon { color: #d9ff7a; font-size: 21px; line-height: 1; }
+    .streak strong { display: block; font-size: 17px; }
+    .streak span:last-child { display: block; color: var(--muted); font-size: 10px; }
+
+    .game-layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 1.18fr) minmax(230px, 0.82fr);
+      align-items: start;
+      gap: 28px;
+    }
+    .board-column { min-width: 0; }
+    .board-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .progress { font-size: 13px; font-weight: 800; }
+    .progress strong { color: #dff5e0; font-size: 17px; }
+    .board-label { color: var(--muted); font-size: 11px; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(var(--grid-columns, 10), minmax(0, 1fr));
+      gap: 6px;
+      width: min(100%, 460px);
+      aspect-ratio: 1;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(11, 20, 19, 0.9);
+      touch-action: none;
+      user-select: none;
+    }
+    .board-row { display: contents; }
+    .cell {
+      min-width: 0;
+      min-height: 0;
+      border: 1px solid var(--tile-border);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      background: var(--tile);
+      color: var(--tile-ink);
+      cursor: pointer;
+      font-family: "Courier New", monospace;
+      font-size: clamp(16px, 1.7vw, 22px);
+      font-weight: 800;
+      line-height: 1;
+      transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+    }
+    .cell:hover { transform: translateY(-1px); border-color: rgba(255,255,255,0.22); }
+    .cell.is-found {
+      background: var(--found);
+      color: var(--found-ink);
+      border-color: rgba(255,255,255,0.12);
+    }
+    .cell.is-selected {
+      background: var(--selected);
+      color: var(--selected-ink);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: inset 0 0 0 1px rgba(22, 26, 12, 0.18);
+    }
+    .cell.is-hint {
+      background: var(--hint);
+      color: var(--hint-ink);
+      border-color: rgba(255,255,255,0.25);
+    }
+    .cell.is-active { box-shadow: inset 0 0 0 2px rgba(154, 216, 255, 0.9); }
+
+    .board-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+    .primary-btn, .secondary-btn {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 16px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+      color: var(--accent-ink);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(92, 155, 88, 0.18);
+    }
+    .secondary-btn {
+      border-color: var(--line);
+      background: rgba(255,255,255,0.02);
+      color: var(--text);
+      box-shadow: none;
+    }
+    .secondary-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .hint-count { color: var(--muted); font-size: 12px; }
+
+    .words-panel {
+      padding: 18px 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(20, 33, 31, 0.95);
+    }
+    .panel-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .panel-head h2 { margin: 0; font-size: 24px; }
+    .panel-head span { color: var(--muted); font-size: 11px; }
+    .word-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px;
+      padding: 0;
+      margin: 6px 0 0;
+      list-style: none;
+    }
+    .word-list li {
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .word-list li.found {
+      color: var(--muted);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+    }
+    .word-list li.found::after { content: " ✓"; color: #dff5e0; text-decoration: none; }
+    .helper { margin: 15px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .status { min-height: 21px; margin: 10px 0 0; color: #dfeae8; font-size: 12px; }
+    .storage-status { min-height: 18px; margin: 4px 0 0; color: var(--hint); font-size: 11px; }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #edf2ef;
+      --bg-soft: #e1eae4;
+      --panel: #ffffff;
+      --panel-2: #f4f8f5;
+      --line: rgba(32, 63, 49, 0.2);
+      --text: #17231c;
+      --muted: #58675e;
+      --accent: #3f8d5b;
+      --accent-strong: #347a4d;
+      --accent-ink: #ffffff;
+      --tile: #f8fbf8;
+      --tile-border: #bdcbc1;
+      --tile-ink: #19271e;
+      --selected: #f0d46c;
+      --selected-ink: #292310;
+      --found: #a8ddc1;
+      --found-ink: #173322;
+      --hint: #f7ed8b;
+      --hint-ink: #26220f;
+      --focus: #064fc2;
+      --shadow: 0 18px 40px rgba(24, 49, 34, 0.12);
+    }
+    :root[data-theme="light"] body {
+      background:
+        radial-gradient(circle at top, rgba(75, 147, 96, 0.12), transparent 28%),
+        linear-gradient(180deg, #f5f8f5 0%, var(--bg) 100%);
+    }
+    :root[data-theme="light"] .game { background: rgba(255,255,255,0.9); }
+    :root[data-theme="light"] .game-header { background: rgba(247,250,247,0.88); }
+    :root[data-theme="light"] .board { background: #e9f0eb; }
+    :root[data-theme="light"] .words-panel { background: rgba(255,255,255,0.96); }
+    :root[data-theme="light"] .streak,
+    :root[data-theme="light"] .icon-btn { background: rgba(255,255,255,0.72); }
+    :root[data-theme="light"] .nav-btn[aria-pressed="true"] { color: #225d38; }
+    :root[data-theme="light"] .status { color: var(--text); }
+
+    dialog {
+      width: min(440px, calc(100% - 28px));
+      max-height: min(82vh, 680px);
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--panel);
+      color: var(--text);
+      box-shadow: var(--shadow);
+    }
+    dialog::backdrop { background: rgba(3, 10, 8, 0.68); backdrop-filter: blur(3px); }
+    .dialog-content { padding: 22px; }
+    .dialog-content h2 { margin: 0 0 8px; font-size: 21px; }
+    .dialog-content p { color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .dialog-actions button { min-height: 40px; }
+    .form-field { display: grid; gap: 6px; margin-top: 16px; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .form-field select { min-height: 42px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-soft); color: var(--text); }
+    .stats-list { margin: 18px 0 0; }
+    .stat-row { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+    .stat-row dt { color: var(--muted); }
+    .stat-row dd { margin: 0; font-weight: 800; }
+    .timer { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700; }
+    .game-header { flex-wrap: wrap; }
+    .game-nav { flex-wrap: wrap; justify-content: flex-end; }
+
+    @media (max-width: 760px) {
+      .prototype-shell { padding: 18px 14px 30px; }
+      .prototype-head { align-items: flex-start; flex-direction: column; gap: 12px; }
+      .game { min-height: 0; }
+      .game-header { align-items: flex-start; padding: 15px; }
+      .game-nav { flex-wrap: wrap; justify-content: flex-end; }
+      .nav-btn { padding: 8px 9px; font-size: 11px; }
+      .icon-btn { padding: 8px; }
+      .content { padding: 22px 16px 26px; }
+      .game-intro { align-items: flex-start; flex-wrap: wrap; }
+      .streak { min-width: auto; padding: 8px; }
+      .streak span:last-child { display: none; }
+      .streak strong { font-size: 14px; }
+      .game-layout { grid-template-columns: 1fr; gap: 18px; }
+      .board { width: 100%; gap: 4px; padding: 5px; }
+      .cell { font-size: clamp(12px, 4vw, 18px); }
+      .words-panel { padding: 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body class="prototype-b">
+  <main class="prototype-shell">
+    <header class="prototype-head">
+      <div class="prototype-brand"><span class="brand-mark" aria-hidden="true">C</span><span>Caça-Palavras<small>Protótipo de interface</small></span></div>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Alterar tema">Tema</button>
+    </header>
+    <p class="prototype-note">Alto contraste, foco visível e seleção direta na grade.</p>
+    <section class="game prototype-b" id="game" aria-labelledby="game-title">
+      <header class="game-header">
+        <div class="game-logo"><span class="brand-mark" aria-hidden="true">C</span><span>passatempo diário</span></div>
+        <nav class="game-nav" aria-label="Menu do jogo">
+          <button class="nav-btn" id="daily-game-button" data-mode="daily" type="button" aria-pressed="true">Desafio diário</button>
+          <button class="nav-btn" id="free-game-button" data-mode="free" type="button" aria-pressed="false">Partida livre</button>
+          <button class="icon-btn" id="stats-button" type="button">Estatísticas</button>
+          <button class="icon-btn" id="help-button" type="button">Como jogar</button>
+        </nav>
+      </header>
+      <div class="content">
+        <div class="game-intro">
+          <div><span class="eyebrow" id="daily-date">Desafio diário</span><h1 id="game-title">Palavras do dia</h1><p class="subline">Um intervalo curto, uma grade nova.</p></div>
+          <div class="streak" aria-label="Sequência atual"><span class="streak-icon" aria-hidden="true">✳</span><span><strong id="streak-value">0 dias</strong><span>sequência</span></span></div>
+        </div>
+        <div class="game-layout">
+          <section class="board-column" aria-label="Grade do jogo">
+            <div class="board-meta"><span class="progress" role="status" aria-live="polite" aria-atomic="true"><strong>0</strong> de 8 palavras</span><span class="timer" id="game-timer" aria-label="Tempo de partida">00:00</span><span class="board-label">Grade 10 × 10</span></div>
+            <div class="board" role="grid" aria-label="Grade de letras, 10 linhas por 10 colunas"></div>
+            <div class="board-actions"><button class="primary-btn hint-button" type="button"><span aria-hidden="true">✦</span> Revelar uma letra</button><span class="hint-count">3 dicas disponíveis</span><button class="secondary-btn" id="reset-button" type="button">Reiniciar</button></div>
+            <p class="status" aria-live="polite"></p>
+            <p class="storage-status" id="storage-warning" aria-live="polite"></p>
+          </section>
+          <aside class="words-panel" aria-labelledby="words-title">
+            <div class="panel-head"><h2 id="words-title">Encontre</h2><span>5 restantes</span></div>
+            <ul class="word-list"></ul>
+            <p class="helper">As palavras aparecem na horizontal, vertical ou diagonal. Também vale de trás para frente.</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+    <dialog id="free-dialog" aria-labelledby="free-dialog-title">
+      <form class="dialog-content" id="free-form">
+        <h2 id="free-dialog-title">Nova partida</h2>
+        <p>Escolha o idioma e o tamanho da grade.</p>
+        <label class="form-field" for="free-lang">Idioma
+          <select id="free-lang" name="lang"><option value="pt">Português</option><option value="en">English</option></select>
+        </label>
+        <label class="form-field" for="free-size">Tamanho da grade
+          <select id="free-size" name="size"><option value="8">8 × 8</option><option value="10">10 × 10</option><option value="12">12 × 12</option></select>
+        </label>
+        <div class="dialog-actions"><button class="secondary-btn" type="button" data-close-dialog>Cancelar</button><button class="primary-btn" type="submit">Começar</button></div>
+      </form>
+    </dialog>
+    <dialog id="stats-dialog" aria-labelledby="stats-dialog-title">
+      <div class="dialog-content">
+        <h2 id="stats-dialog-title">Estatísticas</h2>
+        <dl class="stats-list" id="stats-list"></dl>
+        <div class="dialog-actions"><button class="secondary-btn" type="button" data-close-dialog>Fechar</button></div>
+      </div>
+    </dialog>
+    <dialog id="help-dialog" aria-labelledby="help-dialog-title">
+      <div class="dialog-content">
+        <h2 id="help-dialog-title">Como jogar</h2>
+        <p>Encontre as palavras da lista na grade. Selecione a primeira e a última letra com dois cliques ou arraste em linha reta. Também vale na vertical, horizontal, diagonal e de trás para frente.</p>
+        <p>Use as setas para navegar pela grade, Enter para selecionar e Escape para cancelar. Cada partida oferece até três dicas.</p>
+        <div class="dialog-actions"><button class="primary-btn" type="button" data-close-dialog>Entendi</button></div>
+      </div>
+    </dialog>
+    <dialog id="reset-dialog" aria-labelledby="reset-dialog-title">
+      <div class="dialog-content">
+        <h2 id="reset-dialog-title">Reiniciar desafio?</h2>
+        <p>O progresso e as dicas deste desafio diário serão apagados.</p>
+        <div class="dialog-actions"><button class="secondary-btn" type="button" data-close-dialog>Continuar</button><button class="primary-btn" id="confirm-reset" type="button">Reiniciar</button></div>
+      </div>
+    </dialog>
+    <dialog id="complete-dialog" aria-labelledby="complete-dialog-title">
+      <div class="dialog-content">
+        <h2 id="complete-dialog-title">Muito bem!</h2>
+        <p id="completion-mode">Partida concluída</p>
+        <p id="completion-words">8 palavras encontradas</p>
+        <p>Tempo: <strong id="completion-time">00:00</strong><br><span id="completion-hints">0 dicas usadas</span></p>
+        <p id="completion-streak"></p>
+        <div class="dialog-actions"><button class="secondary-btn" type="button" data-close-dialog>Fechar</button><button class="primary-btn" id="play-again" type="button">Jogar novamente</button></div>
+      </div>
+    </dialog>
+  </main>
+  <script type="module" src="./js/main.js"></script>
+  <script type="application/json" id="prototype-controller-reference">
+    import { generateGame } from "./js/generator.js";
+    import { matchSelection, resolveLine } from "./js/selection.js";
+
+    const wordsToFind = ["janela", "floresta", "planeta", "caminho", "viagem", "caderno", "brisa", "estrela"];
+    const game = generateGame({ seed: new Date().toISOString().slice(0, 10), lang: "pt", size: 10, dictionary: wordsToFind });
+    const grid = document.querySelector(".board");
+    const statusEl = document.querySelector(".status");
+    const wordList = document.querySelector(".word-list");
+    const progressEl = document.querySelector(".progress");
+
+    let activeCell = 0;
+    let startCell = null;
+    let dragActive = false;
+    let selectionPath = [];
+    const foundCells = new Set();
+    const foundWords = new Set();
+
+    function rowColFromIndex(index) {
+      return { row: Math.floor(index / game.size), col: index % game.size };
+    }
+
+    function indexFromRowCol(row, col) {
+      return row * game.size + col;
+    }
+
+    function updateProgress() {
+      const total = game.targets.length;
+      const found = foundWords.size;
+      const remaining = Math.max(0, total - found);
+      progressEl.innerHTML = `<strong>${found}</strong> de ${total} palavras`;
+      document.querySelector(".panel-head span").textContent = `${remaining} ${remaining === 1 ? "restante" : "restantes"}`;
+    }
+
+    function refreshSelection() {
+      const cells = [...grid.children];
+      cells.forEach((cell, index) => {
+        const inSelection = selectionPath.includes(index);
+        const isFound = foundCells.has(index);
+        cell.tabIndex = index === activeCell ? 0 : -1;
+        cell.classList.remove("is-selected", "is-active");
+        if (inSelection) cell.classList.add("is-selected");
+        if (isFound) cell.classList.add("is-found");
+        if (index === activeCell && !isFound) cell.classList.add("is-active");
+      });
+    }
+
+    function markWordAsFound(target) {
+      const normalized = target.normalized;
+      foundWords.add(normalized);
+      const items = [...wordList.querySelectorAll("li")];
+      items.forEach((item) => {
+        if (item.dataset.word === normalized) item.classList.add("found");
+      });
+      updateProgress();
+    }
+
+    function setSelection(startIndex, endIndex) {
+      const path = resolveLine(rowColFromIndex(startIndex), rowColFromIndex(endIndex));
+      selectionPath = path ? path.map(({ row, col }) => indexFromRowCol(row, col)) : [];
+      activeCell = startIndex;
+      refreshSelection();
+      if (!selectionPath.length) {
+        statusEl.textContent = "Seleção inválida. Use uma linha reta, horizontal, vertical ou diagonal.";
+        return;
+      }
+      if (selectionPath.length === 1) {
+        statusEl.textContent = "Primeira letra marcada. Escolha a última letra da palavra.";
+        return;
+      }
+      statusEl.textContent = "Palavra em destaque. Confirme a seleção.";
+    }
+
+    function validateSelection() {
+      if (selectionPath.length < 2) {
+        startCell = null;
+        selectionPath = [];
+        refreshSelection();
+        return;
+      }
+
+      const first = rowColFromIndex(selectionPath[0]);
+      const last = rowColFromIndex(selectionPath.at(-1));
+      const match = matchSelection(game.grid, game.targets, first, last);
+
+      if (!match) {
+        statusEl.textContent = "Essa palavra não está na lista.";
+        setTimeout(() => {
+          selectionPath = [];
+          startCell = null;
+          refreshSelection();
+          statusEl.textContent = "Seleção removida. Tente outra palavra.";
+        }, 300);
+        return;
+      }
+
+      const cells = match.cells.map(({ row, col }) => indexFromRowCol(row, col));
+      cells.forEach((index) => {
+        foundCells.add(index);
+        const cell = grid.children[index];
+        if (cell) {
+          cell.classList.remove("is-selected", "is-active");
+          cell.classList.add("is-found");
+        }
+      });
+
+      markWordAsFound(match.target);
+      startCell = null;
+      selectionPath = [];
+      refreshSelection();
+      statusEl.textContent = `Palavra encontrada: ${match.target.display}`;
+    }
+
+    function renderWordList() {
+      wordList.replaceChildren();
+      game.targets.forEach((target) => {
+        const item = document.createElement("li");
+        item.dataset.word = target.normalized;
+        item.textContent = target.display;
+        wordList.append(item);
+      });
+      updateProgress();
+    }
+
+    function renderGrid() {
+      grid.replaceChildren();
+
+      for (let row = 0; row < game.size; row += 1) {
+        for (let col = 0; col < game.size; col += 1) {
+          const index = indexFromRowCol(row, col);
+          const cell = document.createElement("button");
+          const letter = game.grid[row][col];
+          cell.type = "button";
+          cell.className = "cell";
+          cell.textContent = letter;
+          cell.setAttribute("role", "gridcell");
+          cell.setAttribute("aria-label", `Linha ${row + 1}, coluna ${col + 1}, letra ${letter}`);
+          cell.tabIndex = index === activeCell ? 0 : -1;
+          if (foundCells.has(index)) cell.classList.add("is-found");
+
+          cell.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            dragActive = true;
+            startCell = index;
+            setSelection(index, index);
+            cell.focus();
+          });
+
+          cell.addEventListener("pointerenter", () => {
+            if (!dragActive || startCell === null || foundCells.has(index)) return;
+            const path = resolveLine(rowColFromIndex(startCell), rowColFromIndex(index));
+            if (!path) return;
+            selectionPath = path.map(({ row: pathRow, col: pathCol }) => indexFromRowCol(pathRow, pathCol));
+            refreshSelection();
+          });
+
+          cell.addEventListener("click", () => {
+            if (dragActive) return;
+            if (startCell === null) {
+              startCell = index;
+              setSelection(index, index);
+              return;
+            }
+
+            const path = resolveLine(rowColFromIndex(startCell), rowColFromIndex(index));
+            if (!path) {
+              startCell = null;
+              selectionPath = [];
+              refreshSelection();
+              return;
+            }
+
+            selectionPath = path.map(({ row: pathRow, col: pathCol }) => indexFromRowCol(pathRow, pathCol));
+            refreshSelection();
+            validateSelection();
+            startCell = null;
+          });
+
+          cell.addEventListener("keydown", (event) => {
+            const moves = { ArrowUp: -game.size, ArrowDown: game.size, ArrowLeft: -1, ArrowRight: 1 };
